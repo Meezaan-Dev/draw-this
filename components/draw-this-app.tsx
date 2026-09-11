@@ -18,7 +18,14 @@ import {
 } from "lucide-react";
 import { FormEvent, PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { createRandomChallenge, getDailyChallenge } from "@/lib/challenges";
-import { categories, difficulties, getSaferPromptSuggestions, inferCategoryFromSubject, resolveSearchCategory } from "@/lib/reference-query";
+import {
+  categories,
+  difficulties,
+  getSaferPromptSuggestions,
+  guidedPromptSuggestions,
+  inferCategoryFromSubject,
+  resolveSearchCategory
+} from "@/lib/reference-query";
 import {
   addRecentReference,
   getPreferences,
@@ -33,12 +40,7 @@ import type { Category, Difficulty, DrawingChallenge, ReferenceImage, SearchResp
 type View = "discover" | "saved" | "recent";
 
 const sketchStyles: SketchStyle[] = ["Pencil", "Ink", "Charcoal", "Construction"];
-const featuredPrompts: Array<{ subject: string; category: Category }> = [
-  { subject: "Old Cape Town corner shop", category: "Buildings" },
-  { subject: "hand holding a mug", category: "Hands" },
-  { subject: "running shoe", category: "Objects" },
-  { subject: "human side profile", category: "Faces" }
-];
+const featuredPrompts = guidedPromptSuggestions.slice(0, 4);
 
 const sketchFilterClass: Record<SketchStyle, string> = {
   Pencil: "sketch-filter-pencil",
@@ -71,7 +73,6 @@ export function DrawThisApp() {
   const [challenge, setChallenge] = useState<DrawingChallenge | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("Choose a subject and pull a reference into view.");
-  const [categoryNote, setCategoryNote] = useState("Searching Objects.");
   const [emptySuggestions, setEmptySuggestions] = useState<Array<{ subject: string; category: Category; difficulty: Difficulty }>>([]);
   const [focusMode, setFocusMode] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -85,6 +86,8 @@ export function DrawThisApp() {
   const dailyChallenge = useMemo(() => getDailyChallenge(), []);
   const inferredCategory = useMemo(() => inferCategoryFromSubject(query), [query]);
   const searchCategory = useMemo(() => resolveSearchCategory(query, category), [category, query]);
+  const categoryNote =
+    searchCategory && searchCategory !== category ? `Matched to ${searchCategory}; using that for better results.` : `Searching ${searchCategory ?? category}.`;
   const hasPromptState = Boolean(query.trim() || current || results.length || challenge);
   const primaryActionLabel = current ? "Another Reference" : query.trim() ? "Generate Reference" : "Try Daily Drawing";
   const actionHelp = useMemo(() => {
@@ -154,11 +157,6 @@ export function DrawThisApp() {
 
     setIsLoading(true);
     setView("discover");
-    setCategoryNote(
-      resolvedCategory && resolvedCategory !== nextCategory
-        ? `Matched to ${resolvedCategory}; using that for better results.`
-        : `Searching ${resolvedCategory ?? nextCategory}.`
-    );
     setEmptySuggestions([]);
     setMessage(shuffle ? "Finding another angle..." : "Looking for drawing references...");
 
@@ -229,7 +227,6 @@ export function DrawThisApp() {
     setCurrent(null);
     setResults([]);
     setEmptySuggestions([]);
-    setCategoryNote("Searching Objects.");
     setMessage("Choose a subject and pull a reference into view.");
     resetImage();
   }
@@ -775,21 +772,17 @@ function BoardActions({
           event.preventDefault();
           onPrimary();
         }}
-        className={`sketch-line min-h-12 min-w-[270px] rounded-xl px-8 font-display text-2xl transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45 ${
-          focusMode ? "bg-paper text-ink" : "bg-paper text-ink"
-        }`}
+        className="sketch-line min-h-12 min-w-[270px] rounded-xl bg-paper px-8 font-display text-2xl text-ink transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-45"
       >
         {primaryActionLabel}
       </button>
 
       <div className="flex flex-wrap justify-center gap-2 md:justify-end">
         {!focusMode && (
-          <IconButton label="Surprise Me" tooltip="Pick a random subject, difficulty, and duration" onClick={onSurprise} disabled={isLoading}>
-            <Sparkles size={17} />
-          </IconButton>
-        )}
-        {!focusMode && (
           <>
+            <IconButton label="Surprise Me" tooltip="Pick a random subject, difficulty, and duration" onClick={onSurprise} disabled={isLoading}>
+              <Sparkles size={17} />
+            </IconButton>
             <IconButton label="Zoom in" tooltip="Make both image panels larger" onClick={onZoomIn} disabled={!current}>
               <ZoomIn size={17} />
             </IconButton>

@@ -74,10 +74,6 @@ export function removeSavedReference(reference: ReferenceImage, storage?: Storag
   return next;
 }
 
-export function isReferenceSaved(reference: ReferenceImage, storage?: StorageLike) {
-  return getSavedReferences(storage).some((item) => storageId(item) === storageId(reference));
-}
-
 export function getRecentReferences(storage?: StorageLike) {
   return readJson<ReferenceImage[]>(RECENT_KEY, [], storage);
 }

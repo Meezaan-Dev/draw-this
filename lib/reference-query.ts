@@ -138,7 +138,7 @@ export function buildReferenceQuery({
   return Array.from(terms).join(" ");
 }
 
-export function getSaferPromptSuggestions(subject: string, category?: Category, limit = 3) {
+export function getSaferPromptSuggestions(subject: string, category?: Category) {
   const inferred = inferCategoryFromSubject(subject);
   const resolvedCategory = inferred ?? (category === "Random" ? undefined : category);
   const normalizedSubject = subject.toLowerCase().trim();
@@ -150,5 +150,5 @@ export function getSaferPromptSuggestions(subject: string, category?: Category, 
     return resolvedCategory ? suggestion.category === resolvedCategory : true;
   });
 
-  return (suggestions.length ? suggestions : guidedPromptSuggestions).slice(0, limit);
+  return (suggestions.length ? suggestions : guidedPromptSuggestions).slice(0, 3);
 }
